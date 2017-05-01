@@ -1,0 +1,8 @@
+build/obj/*
+bin/*
+
+# Eclipse Project files
+.classpath
+.project
+.cproject
+.settings/
