@@ -10,6 +10,8 @@
 
 #include <vector>
 
+static const int PROTOCOL_VERSION = 70001;
+
 template<typename T1>
 inline uint256 Hash(const T1 pbegin, const T1 pend)
 {
@@ -29,4 +31,35 @@ inline uint256 Hash(const std::vector<unsigned char>& vch) {
     return hash2;
 }
 
+class CHashWriter
+{
+private:
+    Sha256 ctx;
+
+public:
+    int nType;
+    int nVersion;
+
+    void Init() {
+        sha256Init(&ctx);
+    }
+
+    CHashWriter() : nType(1 << 2), nVersion(PROTOCOL_VERSION) {
+        Init();
+    }
+
+    CHashWriter& write(const char *pch, size_t size) {
+        sha256Process(&ctx, (const unsigned char *)pch, size);
+        return (*this);
+    }
+
+    // invalidates the object
+    uint256 GetHash() {
+        uint256 hash1;
+        sha256Done(&ctx, (unsigned char*)&hash1);
+        uint256 hash2;
+        pqcSha256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
+        return hash2;
+    }
+};
 #endif

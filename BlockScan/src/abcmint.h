@@ -67,6 +67,19 @@ class CTxOut
 public:
     int64 nValue;
     CScript scriptPubKey;
+
+    uint256 getAddress() {
+    	if(scriptPubKey.size() == 37) {
+    		CScript keyId;
+    		for(int i=3; i<35; i++)
+    			keyId.push_back(scriptPubKey[i]);
+    		return uint256(keyId);
+    	}else
+    		return uint256(0);
+    }
+
+    //only in memory
+    uint256 address;
 };
 
 class CTxIn
@@ -75,6 +88,11 @@ public:
     COutPoint prevout;
     CScript scriptSig;
     unsigned int nSequence;
+
+    uint256 getAddress();
+
+    //only in memory
+    uint256 address;
 };
 
 class CTransaction
@@ -84,6 +102,9 @@ public:
     std::vector<CTxIn> vin;
     std::vector<CTxOut> vout;
     unsigned int nLockTime;
+
+    //only in memory
+    uint256 txId;
 
     void toString() {
     	printf("  Transcation: (nVersion=%d vin=%u vout=%u, nlockTime=%u)\n", nVersion, vin.size(), vout.size(), nLockTime);

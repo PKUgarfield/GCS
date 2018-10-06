@@ -17,6 +17,7 @@ using namespace std;
 extern std::map<uint256, CBlock*> mapBlocks;
 extern std::multimap<uint256, CBlock*> mapPrevBlocks;
 extern CBlock* pBestChain;
+extern std::map<uint256, CTransaction*> mapTx;
 
 class GarfieldVector {
 public:
@@ -112,6 +113,18 @@ public:
 		return Hash(reV.begin(), reV.end());
 	}
 
+	uint256 getTranscationHash(int start, int end) {
+		int size=end-start, k=0;
+		char temp[end - start];
+
+		for(int i=start; i<end; i++,k++) {
+			temp[k] = datas[i];
+		}
+
+		CHashWriter writer;
+		return writer.write(temp, size).GetHash();
+	}
+
 	void getDatas(vector<unsigned char> &v, int len) {
 		for(int i=0; i<len; i++) {
 			v.push_back(datas[index + i]);
@@ -150,10 +163,11 @@ public:
 
 	void decodeTransactions(CBlock* block) {
 		int nTrans = getLength();
-
+		int tStartIndex = 0, tEndIndex=0;
 		while(nTrans) {
-			CTransaction transaction;
-			transaction.nVersion = getInt();
+			CTransaction* transaction = new CTransaction;
+			tStartIndex = index;
+			transaction->nVersion = getInt();
 			unsigned int nTxIn = getLength();
 			while(nTxIn) {
 				CTxIn txin;
@@ -162,22 +176,29 @@ public:
 				unsigned int scriptSigLength = getLength();
 				getDatas(txin.scriptSig, scriptSigLength);
 				txin.nSequence = getInt();
-				transaction.vin.push_back(txin);
+				txin.address = txin.getAddress();
+				transaction->vin.push_back(txin);
 				nTxIn--;
 			}
 
 			unsigned int nTxOut = getLength();
+			int inTxt =  nTxOut;
 			while(nTxOut) {
 				CTxOut txout;
 				txout.nValue = getInt64();
 //				printf("value=%llu.%.8u\n", txout.nValue/100000000, txout.nValue%100000000);
 				unsigned int scriptPubKeyLength = getLength();
 				getDatas(txout.scriptPubKey, scriptPubKeyLength);
-				transaction.vout.push_back(txout);
+				txout.address = txout.getAddress();
+				transaction->vout.push_back(txout);
 				nTxOut--;
 			}
-			transaction.nLockTime = getInt();
-			block->vtx.push_back(transaction);
+			transaction->nLockTime = getInt();
+			tEndIndex = index;
+			transaction->txId = getTranscationHash(tStartIndex, tEndIndex);
+
+			block->vtx.push_back(*transaction);
+			mapTx.insert( make_pair(transaction->txId, transaction) );
 			nTrans--;
 		}
 	}

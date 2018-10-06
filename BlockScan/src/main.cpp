@@ -16,6 +16,7 @@
 #include "abcmint.h"
 
 std::map<uint256, CBlock*> mapBlocks;
+std::map<uint256, CTransaction*> mapTx;
 std::multimap<uint256, CBlock*> mapPrevBlocks;
 CBlock* pBestChain = NULL;
 uint256 hashGenesisBlock("0xcea89aa6adb81572f8b9e5f9b5d0184cbbc25208164cb1547decf3655da9dc77");
@@ -26,6 +27,14 @@ void CBlock::toString() {
 	for(int i=0; i<vtx.size(); i++) {
 		vtx[i].toString();
 	}
+}
+
+uint256 CTxIn::getAddress() {
+	std::map<uint256, CTransaction*>::iterator mi = mapTx.find(prevout.hash);
+	if(mi == mapTx.end())
+		return uint256(0);
+	CTransaction* tx = mi->second;
+	return tx->vout[prevout.n].getAddress();
 }
 
 void updateHeight(uint256 key, CBlock* prevBlock, unsigned int preHeight) {
