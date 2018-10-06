@@ -2,6 +2,7 @@
 #define INCLUDE_ABCMINT_H_
 
 #include "uint256.h"
+#include <map>
 
 class CTransaction;
 
@@ -29,7 +30,22 @@ public:
     std::vector<CTransaction> vtx;
     unsigned int nLockTime;
 
+    //only in memory
+    CBlock* prev;
+    CBlock* next;
+    unsigned int height;
+    uint256 hash;
+    unsigned int chainwork;
+
     void toString();
+
+    CBlock() {
+    	prev = NULL;
+    	next = NULL;
+    	height = 0;
+    	nLockTime = 0;
+    	chainwork = 0;
+    }
 };
 
 class COutPoint
@@ -73,5 +89,10 @@ public:
     	printf("  Transcation: (nVersion=%d vin=%u vout=%u, nlockTime=%u)\n", nVersion, vin.size(), vout.size(), nLockTime);
     }
 };
+
+void updateHeight(uint256 key, CBlock* prevBlock, unsigned int preHeight);
+void buildBestChain();
+
+
 
 #endif

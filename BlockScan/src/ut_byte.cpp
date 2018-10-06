@@ -1,10 +1,3 @@
-/*
- * ut_byte.cc
- *
- *  Created on: 2018��10��4��
- *      Author: Garfield
- */
-
 #include <stdio.h>
 #include <string.h>
 

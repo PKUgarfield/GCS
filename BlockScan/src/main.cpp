@@ -15,6 +15,11 @@
 #include "hash.h"
 #include "abcmint.h"
 
+std::map<uint256, CBlock*> mapBlocks;
+std::multimap<uint256, CBlock*> mapPrevBlocks;
+CBlock* pBestChain = NULL;
+uint256 hashGenesisBlock("0xcea89aa6adb81572f8b9e5f9b5d0184cbbc25208164cb1547decf3655da9dc77");
+
 void CBlock::toString() {
 	printf("  Block:( version=%d, prev=[%s], merkle=[%s], nTime=%u, nBits=%u, nNonce=[%s]\n", nVersion, hashPrevBlock.ToString().c_str(),
 			hashMerkleRoot.ToString().c_str(), nTime, nBits, nNonce.ToString().c_str());
@@ -23,26 +28,63 @@ void CBlock::toString() {
 	}
 }
 
+void updateHeight(uint256 key, CBlock* prevBlock, unsigned int preHeight) {
+	std::multimap<uint256, CBlock*>::iterator it;
+	for (it=mapPrevBlocks.equal_range(key).first; it!=mapPrevBlocks.equal_range(key).second; ++it) {
+		CBlock* block = it->second;
+		if(block->chainwork == 0 || block->chainwork < prevBlock->chainwork + block->nBits) {
+			block->height = preHeight + 1;
+			block->prev = prevBlock;
+			block->chainwork = prevBlock->chainwork + block->nBits;
+			if(block->chainwork > pBestChain->chainwork)
+				pBestChain = block;
+
+		}
+//		printf("set block[%s] with height = %u best=%u\n", block->hash.ToString().c_str(), block->height, pBestChain->height);
+		updateHeight(block->hash, block, block->height);
+	}
+}
+
+void finishedChain() {
+	if(pBestChain == NULL)
+		return;
+	CBlock* after = pBestChain;
+	CBlock* prev = pBestChain->prev;
+	while(prev != NULL) {
+		prev->next = after;
+		after = prev;
+		prev = prev->prev;
+	}
+}
+
+
+void buildBestChain() {
+	std::map<uint256, CBlock*>::iterator mi = mapBlocks.find(hashGenesisBlock);
+	if(mi != mapBlocks.end()) {
+		CBlock* block = mi->second;
+		block->chainwork += block->nBits;
+		pBestChain = block;
+		updateHeight(hashGenesisBlock, block, 0);
+	}
+	finishedChain();
+}
+
+void scanBestChain() {
+	CBlock* start = mapBlocks.find(hashGenesisBlock)->second;
+	while(start != NULL) {
+		printf("scan height=%u\n", start->height);
+		start = start->next;
+	}
+}
+
 
 int main(void) {
 
-//	GarfieldVector v;
-//	readFiles(v.datas);
-//
-//	unsigned char*result = (unsigned char*)malloc(sizeof(unsigned char*));
-//	vByteToHexStr(v, 0, v.size(), &result);
-//
-//	printf("flag = %d index = %d\n", v.isBlockStart(), v.index);
-//	printf("size = %d index = %d\n", v.getInt(), v.index);
-//	printf("blockHash = %s index = %d\n", v.getBlockHash().ToString().c_str(), v.index);
-//	printf("version = %d index = %d\n", v.getInt(), v.index);
-//	printf("prehash = %s index = %d\n", v.get256().ToString().c_str(), v.index);
-//	printf("merklehash = %s index = %d\n", v.get256().ToString().c_str(), v.index);
-//	printf("time = %d index = %d\n", v.getInt(), v.index);
-//	printf("nbit = %d index = %d\n", v.getInt(), v.index);
-//	printf("nNonce = %s index = %d\n", v.get256().ToString().c_str(), v.index);
 	ReadBlocks readBlocks;
 	readBlocks.tryReadBlock();
+
+	buildBestChain();
+//	scanBestChain();
 
 	return EXIT_SUCCESS;
 }

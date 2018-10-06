@@ -87,21 +87,13 @@ void ReadBlocks::tryReadBlock() {
 
 				count++;
 //				printf("Read NO.[%d] block with blocksize [%d] -- total [%d] , index [%d]\n", count, blockSize, vt.datas.size(), vt.index);
-				if(count==14502 || count==14958 || count==16403 || count==23838 || count==23841) {
-					CBlock block;
-					vt.decodeBlock(block);
-					vt.decodeTransactions(block);
-					block.toString();
-				}else{
-//					unsigned char result[233736*2 + 10];
-//					vByteToHexStr(vt.datas, 0, vt.datas.size(), result);
-//					printf("\n\n%s\n\n", result);
 
-//					CBlock block;
-//					vt.decodeBlock(block);
-//					vt.decodeTransactions(block);
-//					block.toString();
-				}
+
+				CBlock* block = new CBlock;
+				vt.decodeBlock(block);
+				vt.decodeTransactions(block);
+//				block.toString();
+
 				vt.reset();
 			}
 		}else {

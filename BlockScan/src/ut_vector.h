@@ -10,8 +10,13 @@
 #include "uint256.h"
 #include <stdlib.h>
 #include "hash.h"
+
 #include "abcmint.h"
 using namespace std;
+
+extern std::map<uint256, CBlock*> mapBlocks;
+extern std::multimap<uint256, CBlock*> mapPrevBlocks;
+extern CBlock* pBestChain;
 
 class GarfieldVector {
 public:
@@ -57,8 +62,8 @@ public:
 		return out;
 	}
 
-	uint64 getInt64() {
-		uint64 out = 0;
+	int64 getInt64() {
+		int64 out = 0;
 		unsigned char *p = (unsigned char *)(&out);
 		p[0] = datas[index + 0];
 		p[1] = datas[index + 1];
@@ -124,24 +129,26 @@ public:
 		}else if(first == 255) {
 			first = -1;
 		}
-		printf("first = %u\n", first);
+
 		return first;
 	}
 
-	void decodeBlock(CBlock& block) {
-		uint256 blockHash = getBlockHash();
-		printf("try to decode Block[%s].\n", blockHash.ToString().c_str());
+	void decodeBlock(CBlock* block) {
+		block->hash = getBlockHash();
+		printf("try to decode Block[%s].\n", block->hash.ToString().c_str());
 
-		block.nVersion = getInt();
-		block.hashPrevBlock = get256();
-		block.hashMerkleRoot = get256();
-		block.nTime = getInt();
-		block.nBits = getInt();
-		block.nNonce = get256();
+		block->nVersion = getInt();
+		block->hashPrevBlock = get256();
+		block->hashMerkleRoot = get256();
+		block->nTime = getInt();
+		block->nBits = getInt();
+		block->nNonce = get256();
 
+		mapBlocks.insert(make_pair(block->hash, block));
+		mapPrevBlocks.insert(make_pair(block->hashPrevBlock, block));
 	}
 
-	void decodeTransactions(CBlock& block) {
+	void decodeTransactions(CBlock* block) {
 		int nTrans = getLength();
 
 		while(nTrans) {
@@ -153,7 +160,6 @@ public:
 				txin.prevout.hash = get256();
 				txin.prevout.n = getInt();
 				unsigned int scriptSigLength = getLength();
-				printf("scriptSigLength=%u currentindex=%d left=%u\n", scriptSigLength, index, nTxIn);
 				getDatas(txin.scriptSig, scriptSigLength);
 				txin.nSequence = getInt();
 				transaction.vin.push_back(txin);
@@ -163,14 +169,15 @@ public:
 			unsigned int nTxOut = getLength();
 			while(nTxOut) {
 				CTxOut txout;
-				txout.nValue = getDouble();
+				txout.nValue = getInt64();
+//				printf("value=%llu.%.8u\n", txout.nValue/100000000, txout.nValue%100000000);
 				unsigned int scriptPubKeyLength = getLength();
 				getDatas(txout.scriptPubKey, scriptPubKeyLength);
 				transaction.vout.push_back(txout);
 				nTxOut--;
 			}
 			transaction.nLockTime = getInt();
-			block.vtx.push_back(transaction);
+			block->vtx.push_back(transaction);
 			nTrans--;
 		}
 	}
