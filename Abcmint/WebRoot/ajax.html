@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Insert title here</title>
+</head>
+<body>
+
+	<h3 id="test">请点击下面的按钮，通过 jQuery AJAX 改变这段文本。</h3>
+	<button id="btn1" type="button">获得外部的内容</button>
+
+</body>
+
+<script type="text/javascript" src="js/jquery.min.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$("#btn1").click(function() {
+			$.ajax({
+				type: "POST",
+				url: "Ajax",				
+				async: true,
+				dataType: "json",
+				contentType: 'application/json;charset=utf-8',
+				data: "{'name':'tom', 'age':18}",
+				success: function(data) {
+					alert(data.name);
+					$("#test").html(data.name);
+				},
+				error: function(XMLHttpRequest, textStatus, errorThrown) {
+					alert("[error] " +XMLHttpRequest.status + " "+ XMLHttpRequest.readyState + " " + textStatus);
+				}
+				
+			});
+		})
+	})
+</script>
+</html>
